@@ -4,9 +4,12 @@
  * level: debug | info | warn | error | fatal
  * pkg: cache | controller | cron_job | db | domain (backend)
  */
+import { appendFile } from "node:fs/promises";
+
 const LOG_URL =
   process.env.LOG_URL ||
   "http://20.207.122.201/evaluation-service/logs";
+const LOCAL_LOG_PATH = process.env.LOCAL_LOG_PATH || "server.log";
 
 const STACKS = new Set(["backend", "frontend"]);
 const LEVELS = new Set(["debug", "info", "warn", "error", "fatal"]);
@@ -31,6 +34,13 @@ export async function log(stack, level, pkg, message) {
   const headers = { "Content-Type": "application/json" };
   if (process.env.LOG_TOKEN) {
     headers.Authorization = `Bearer ${process.env.LOG_TOKEN}`;
+  }
+
+  const localLine = `[${new Date().toISOString()}] [${s}] [${l}] [${p}] ${String(message)}\n`;
+  try {
+    await appendFile(LOCAL_LOG_PATH, localLine, "utf8");
+  } catch (e) {
+    console.error("[logger] local file write failed:", e.message);
   }
 
   try {
